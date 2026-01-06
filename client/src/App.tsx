@@ -16,8 +16,7 @@ function App() {
   const [message, setMessage] = useState<string>("");
   const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [messageList, setMessageList] = useState<Message[]>([]);
-
-
+  const [adminPw, setAdminPw] = useState<string>("");
 
   function getChannelOptions() {
     return channelList.map(channel => <option value={channel} key={channel}>{channel}</option>)
@@ -66,7 +65,7 @@ function App() {
 
   function joinChatting() {
     if (username.trim() == "") return;
-    socket.emit("login", {username : username});
+    socket.emit("login", {username : username, adminPw: adminPw});
   }
 
   function changeChannel(){
@@ -82,7 +81,9 @@ function App() {
     <>
       {!isConnected && (
         <>
-          <input type="text" id="username" onChange={e => setUsername(e.target.value)} /><button id="joinBtn" onClick={joinChatting}>Join</button>
+          <div>Nom d'utilisateur : <input type="text" id="username" onChange={e => setUsername(e.target.value)} /></div>
+          <div>Mot de passe (admin): <input type='text' id="adminpw" onChange={e => setAdminPw(e.target.value)} /></div>
+          <button id="joinBtn" onClick={joinChatting}>Join</button>
         </>
       )}
 

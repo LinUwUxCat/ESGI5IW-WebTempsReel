@@ -10,6 +10,7 @@ import { Server, Socket } from 'socket.io';
 interface ClientInfo {
   username: string;
   room: string;
+  isAdmin: boolean;
 }
 
 @WebSocketGateway({
@@ -29,10 +30,19 @@ export class SocketIOGateway implements OnGatewayInit {
     this.rooms.set(generate(1)[0], new Set());
     this.rooms.set(generate(1)[0], new Set());
     this.rooms.set(generate(1)[0], new Set());
+    this.rooms.set('ADMIN-SUPPORT', new Set());
+  }
+
+  getRooms(isAdmin: boolean): string[] {
+    return [...this.rooms.keys()].filter((v) =>
+      v == 'ADMIN-SUPPORT' ? isAdmin : true,
+    );
   }
 
   @SubscribeMessage('join')
   handleJoin(client: Socket, data: { room: string }) {
+    if (data.room == 'ADMIN-SUPPORT' && !this.clients.get(client)?.isAdmin)
+      return;
     if (this.rooms.has(data.room)) {
       const room = this.rooms.get(data.room);
       if (!room?.has(client)) {
@@ -48,10 +58,15 @@ export class SocketIOGateway implements OnGatewayInit {
   }
 
   @SubscribeMessage('login')
-  handleLogin(client: Socket, data: { username: string }) {
+  handleLogin(client: Socket, data: { username: string; adminPw: string }) {
+    const isAdmin = data.adminPw == 'Password';
     if (data.username != '' && !this.clients.has(client)) {
-      this.clients.set(client, { room: 'lobby', username: data.username });
-      client.emit('login', true, [...this.rooms.keys()]);
+      this.clients.set(client, {
+        room: 'lobby',
+        username: data.username,
+        isAdmin: isAdmin,
+      });
+      client.emit('login', true, this.getRooms(isAdmin));
       this.rooms.get('lobby')?.add(client);
       this.rooms
         .get('lobby')
