@@ -1,4 +1,4 @@
-Chat en temps réel.
+Chat en temps réel - Martin S
 Lancer le serveur en premier, puis lancer le client.
 
 # Serveur
