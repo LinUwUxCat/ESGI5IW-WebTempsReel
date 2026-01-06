@@ -17,6 +17,8 @@ function App() {
   const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [messageList, setMessageList] = useState<Message[]>([]);
   const [adminPw, setAdminPw] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [channelToAdd, setChannelToAdd] = useState<string>("");
 
   function getChannelOptions() {
     return channelList.map(channel => <option value={channel} key={channel}>{channel}</option>)
@@ -24,7 +26,7 @@ function App() {
 
   useEffect(() => {
 
-    function onLogin(success : true | string, channels : string[]){
+    function onLogin(success : true | string, channels : string[], isAdmin : boolean){
       console.log("Onlogin" + success + channels);
       if (success === true) {
         setIsConnected(true);
@@ -32,6 +34,7 @@ function App() {
       } else {
         console.log(success);
       }
+      setIsAdmin(isAdmin);
     }
 
     function onJoin(username : string){ 
@@ -77,6 +80,14 @@ function App() {
     setMessage("");
   }
 
+  function deleteChannel(name: string){
+    socket.emit("deleteChannel", {name: name})
+  }
+
+  function createChannel(){
+    socket.emit("createChannel", {name: channelToAdd})
+  }
+
   return (
     <>
       {!isConnected && (
@@ -89,13 +100,23 @@ function App() {
 
       {isConnected && (
         <>
-          <select value={selectedChannel} onChange={e => setSelectedChannel(e.target.value)}>
-            {getChannelOptions()}
-          </select> <button onClick={changeChannel}>Join</button>
-          <pre id="chatbox" style={{ display: "flex", flexDirection: "column" }}>
-            {messageList.map(e => {return <span>{e.message}</span>})}
-          </pre>
-          <input type="text" id="message" value={message} onKeyDown={e => {if (e.code=="Enter") sendMessage()}} onChange={e => setMessage(e.target.value)}/><button id="sendBtn" onClick={sendMessage}>Send</button>
+          <div style={{display: "flex", flexDirection: "row"}}>
+            <div>
+              <select value={selectedChannel} onChange={e => setSelectedChannel(e.target.value)}>
+                {getChannelOptions()}
+              </select> <button onClick={changeChannel}>Join</button>
+              <pre id="chatbox" style={{ display: "flex", flexDirection: "column" }}>
+                {messageList.map(e => {return <span>{e.message}</span>})}
+              </pre>
+              <input type="text" id="message" value={message} onKeyDown={e => {if (e.code=="Enter") sendMessage()}} onChange={e => setMessage(e.target.value)}/><button id="sendBtn" onClick={sendMessage}>Send</button>
+            </div>
+            {isAdmin && (
+              <div style={{display: "flex", flexDirection: "column"}}>
+                {channelList.map(c => <div>{c}{c != 'lobby'? <button onClick={()=>deleteChannel(c)}>X</button> : ""}</div>)}
+                <div><input onChange={e => setChannelToAdd(e.target.value)}/><button onClick={createChannel}>+</button></div>
+              </div>
+            )}
+          </div>
         </>
       )}
     </>

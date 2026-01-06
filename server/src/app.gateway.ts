@@ -66,7 +66,7 @@ export class SocketIOGateway implements OnGatewayInit {
         username: data.username,
         isAdmin: isAdmin,
       });
-      client.emit('login', true, this.getRooms(isAdmin));
+      client.emit('login', true, this.getRooms(isAdmin), isAdmin);
       this.rooms.get('lobby')?.add(client);
       this.rooms
         .get('lobby')
@@ -97,5 +97,32 @@ export class SocketIOGateway implements OnGatewayInit {
           );
       }
     }
+  }
+
+  @SubscribeMessage('deleteChannel')
+  handleDeleteChannel(client: Socket, data: { name: string }) {
+    if (!this.clients.get(client)?.isAdmin) return;
+    if (data.name == '' || data.name == 'lobby' || !this.rooms.has(data.name))
+      return;
+    this.rooms.get(data.name)?.forEach((cl) => {
+      this.handleJoin(cl, { room: 'lobby' });
+    }); // Move everyone to lobby
+    this.rooms.delete(data.name);
+    this.updateRooms();
+  }
+
+  @SubscribeMessage('createChannel')
+  handleCreateChannel(client: Socket, data: { name: string }) {
+    if (!this.clients.get(client)?.isAdmin) return;
+    if (data.name == '' || data.name == 'lobby' || this.rooms.has(data.name))
+      return;
+    this.rooms.set(data.name, new Set());
+    this.updateRooms();
+  }
+
+  updateRooms() {
+    [...this.clients.entries()].forEach((cl) => {
+      cl[0].emit('login', true, this.getRooms(cl[1].isAdmin), cl[1].isAdmin);
+    });
   }
 }
